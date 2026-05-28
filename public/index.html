@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Smart Dormitory</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Smart Dormitory (Панель адміністратора)</h1>
+        <button id="themeToggle" class="btn" style="background-color: #34495e;" onclick="toggleTheme()">🌙 Темна тема</button>
+        <button class="btn" onclick="window.print()" style="margin-left: 10px;">📄 Друк (PDF)</button>
+        <button class="btn btn-export" onclick="exportTableToCSV('report.csv')" style="margin-left: 10px; background-color: #27ae60;">📊 В Excel</button>
+        <span style="color: #7f8c8d;">Система управління поселенням</span>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="openTab('students', this)">👨‍🎓 Студенти</button>
+        <button class="tab-btn" onclick="openTab('rooms', this)">🚪 Кімнати</button>
+        <button class="tab-btn" onclick="openTab('debtors', this)">💰 Боржники</button>
+        <button class="tab-btn" onclick="openTab('archived', this)">🗄️ Архів</button>
+        <button class="tab-btn" onclick="openTab('analytics', this)">📊 Аналітика</button>
+        <button class="tab-btn" onclick="openTab('settings', this)">⚙️ Налаштування</button>
+    </div>
+
+    <div id="dashboard" class="dashboard-cards" style="display: flex; gap: 15px; margin-bottom: 20px;"></div>
+
+    <div id="students" class="tab-content active">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <button class="btn btn-add" style="margin-bottom: 0;" onclick="openModal()">+ Заселити студента</button>
+            <input type="text" id="searchStudent" placeholder="🔍 Пошук за прізвищем..." oninput="filterStudents()" style="padding: 10px; width: 300px; border: 1px solid #ccc; border-radius: 4px;">
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Прізвище</th>
+                    <th>Ім'я</th>
+                    <th>Стать</th>
+                    <th>Телефон</th>
+                    <th>Email</th>
+                    <th>Пільга (ID)</th>
+                    <th>Кімната</th>
+                    <th class="action-col">Дії</th>
+                </tr>
+            </thead>
+            <tbody id="students-table-body">
+                <tr><td colspan="9">Завантаження даних...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div id="rooms" class="tab-content">
+        <h3>Кімнати, де є вільні місця</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Поверх</th>
+                    <th>Крило (Ж/Ч)</th>
+                    <th>Квартира</th>
+                    <th>Кімната</th>
+                    <th>Місткість</th>
+                    <th>Вільних місць</th>
+                    <th>Зайнято</th>
+                    <th class="action-col">Дії</th>
+                </tr>
+            </thead>
+            <tbody id="rooms-table-body">
+                <tr><td colspan="6">Завантаження даних...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div id="debtors" class="tab-content">
+        <h3 style="color: #e74c3c;">Увага: студенти із заборгованістю</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Прізвище</th>
+                    <th>Ім'я</th>
+                    <th>Кімната</th>
+                    <th>Квартира</th>
+                    <th>Телефон</th>
+                    <th>Тип боргу</th>
+                    <th>Сума (грн)</th>
+                    <th>Статус</th>
+                    <th class="action-col">Дії</th>
+                </tr>
+            </thead>
+            <tbody id="debtors-table-body">
+                <tr><td colspan="8">Завантаження даних...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div id="archived" class="tab-content">
+        <h3>Історія виселених студентів</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Прізвище</th>
+                    <th>Ім'я</th>
+                    <th>Телефон</th>
+                    <th>Email</th>
+                    <th>Стать</th>
+                    <th>Остання кімната</th>
+                    <th class="action-col">Дії</th>
+                </tr>
+            </thead>
+            <tbody id="archived-table-body">
+                <tr><td colspan="8">Завантаження даних...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div id="analytics" class="tab-content">
+        <h2>Аналітика гуртожитку</h2>
+        <div style="display: flex; gap: 20px; justify-content: space-around; flex-wrap: wrap;">
+            <div style="width: 400px; padding: 20px; background: var(--card-bg, #fff); border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                <canvas id="roomsChart"></canvas>
+            </div>
+            <div style="width: 400px; padding: 20px; background: var(--card-bg, #fff); border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                <div style="overflow-x: auto;"><div id="debtsChartContainer" style="min-width: 400px;"><canvas id="debtsChart"></canvas></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="settings" class="tab-content">
+        <h3>Керування фондом кімнат</h3>
+        <button class="btn btn-add" onclick="openRoomModal()">+ Додати кімнату</button>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Номер</th>
+                    <th>Місткість</th>
+                    <th>Заселено</th>
+                    <th>Квартира</th>
+                    <th>Крило</th>
+                    <th class="action-col">Дії</th>
+                </tr>
+            </thead>
+            <tbody id="settings-rooms-table-body">
+                <tr><td colspan="7">Завантаження даних...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <h3>Заселення нового студента</h3>
+            <form id="addForm" onsubmit="submitStudent(event)">
+                <label style="font-size: 12px; color: #7f8c8d;">Прізвище:</label>
+                <input type="text" id="lastName" placeholder="Прізвище" required>
+                
+                <label style="font-size: 12px; color: #7f8c8d;">Ім'я:</label>
+                <input type="text" id="firstName" placeholder="Ім'я" required>
+
+                <label style="font-size: 12px; color: #7f8c8d;">Стать:</label>
+                <select id="gender" required>
+                    <option value="Чоловіча">Чоловіча</option>
+                    <option value="Жіноча">Жіноча</option>
+                </select>
+                
+                <label style="font-size: 12px; color: #7f8c8d;">Телефон:</label>
+                <input type="text" id="phone" placeholder="Телефон (+380...)">
+                
+                <label style="font-size: 12px; color: #7f8c8d;">Email:</label>
+                <input type="email" id="email" placeholder="Email">
+                
+                <label style="font-size: 12px; color: #7f8c8d;">Номер кімнати:</label>
+                <select id="roomId" required>
+                    <option value="">Оберіть стать...</option>
+                </select>
+                
+                <label style="font-size: 12px; color: #7f8c8d;">Пільга:</label>
+                <select id="benefitId" required>
+                    <option value="">Завантаження...</option>
+                </select>
+                
+                <div style="margin-top: 15px;">
+                    <button type="submit" class="btn btn-add" style="margin-bottom: 0;">Зберегти</button>
+                    <button type="button" class="btn btn-cancel" onclick="closeModal()">Скасувати</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="residentsModal" class="modal">
+        <div class="modal-content">
+            <h3>Мешканці кімнати</h3>
+            <ul id="residents-list"></ul>
+            <button type="button" class="btn btn-cancel" style="margin-top: 10px;" onclick="closeResidentsModal()">Закрити</button>
+        </div>
+    </div>
+
+    <div id="editDebtModal" class="modal">
+        <div class="modal-content">
+            <h3>Редагування боргу</h3>
+            <p id="debtChargeType" style="font-size: 13px; color: #7f8c8d; margin: 0 0 10px;"></p>
+            <form id="editDebtForm" onsubmit="submitDebt(event)">
+                <label style="font-size: 12px; color: #7f8c8d;">Сума боргу (грн):</label>
+                <input type="number" id="debtAmount" step="0.01" min="0" required>
+                <label style="font-size: 12px; color: #7f8c8d;">Статус оплати:</label>
+                <select id="debtIsPaid" required>
+                    <option value="0">Не оплачено</option>
+                    <option value="1">Оплачено</option>
+                </select>
+                <div style="margin-top: 15px;">
+                    <button type="submit" class="btn btn-add" style="margin-bottom: 0;">Зберегти</button>
+                    <button type="button" class="btn btn-cancel" onclick="closeEditDebtModal()">Скасувати</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="newDebtModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h3>Нарахувати борг: <span id="newDebtStudentName"></span></h3>
+            <input type="hidden" id="newDebtStudentId">
+            <div style="margin-bottom: 15px;">
+                <label>Тип нарахування:</label>
+                <input type="text" id="newDebtChargeType" placeholder="Напр., Оплата за проживання (травень)" style="width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box;">
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label>Сума боргу (грн):</label>
+                <input type="number" id="newDebtAmount" placeholder="Сума" style="width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box;">
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button onclick="submitNewDebt()" style="background-color: #2ecc71; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer;">Зберегти</button>
+                <button onclick="closeNewDebtModal()" style="background-color: #e74c3c; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer;">Скасувати</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="restoreModal" class="modal">
+        <div class="modal-content">
+            <h3>Поновити студента: <span id="restoreStudentName"></span></h3>
+            <input type="hidden" id="restoreStudentId">
+            <div class="form-group">
+                <label>Оберіть нову кімнату:</label>
+                <select id="restoreRoomId"></select>
+            </div>
+            <div class="modal-actions" style="margin-top: 15px; display: flex; gap: 10px;">
+                <button onclick="submitRestore()" class="btn-submit" style="background-color: #2ecc71; color: white; border: none; padding: 10px; cursor: pointer; flex: 1; border-radius: 4px;">🔄 Поновити і Заселити</button>
+                <button onclick="closeRestoreModal()" class="btn-cancel" style="background-color: #e74c3c; color: white; border: none; padding: 10px; cursor: pointer; flex: 1; border-radius: 4px;">Скасувати</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="roomModal" class="modal">
+        <div class="modal-content">
+            <h3 id="roomModalTitle">Додавання кімнати</h3>
+            <form id="roomForm" onsubmit="submitRoom(event)">
+                <label style="font-size: 12px; color: #7f8c8d;">Номер кімнати:</label>
+                <input type="text" id="roomNum" placeholder="Напр. 101" required>
+                
+                <label style="font-size: 12px; color: #7f8c8d;">Поверх:</label>
+                <input type="number" id="roomFloor" placeholder="1" required>
+
+                <label style="font-size: 12px; color: #7f8c8d;">Місткість (місць):</label>
+                <input type="number" id="roomCapacity" placeholder="3" required>
+
+                <label style="font-size: 12px; color: #7f8c8d;">Номер квартири:</label>
+                <input type="text" id="roomApt" placeholder="Напр. Кв. 1">
+                
+                <label style="font-size: 12px; color: #7f8c8d;">Крило:</label>
+                <select id="roomWing">
+                    <option value="Не вказано">Не вказано</option>
+                    <option value="Чоловіча">Чоловіча</option>
+                    <option value="Жіноча">Жіноча</option>
+                </select>
+                
+                <div style="margin-top: 15px;">
+                    <button type="submit" class="btn btn-add" style="margin-bottom: 0;">Зберегти</button>
+                    <button type="button" class="btn btn-cancel" onclick="closeRoomModal()">Скасувати</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js" defer></script>
+</body>
+</html>
